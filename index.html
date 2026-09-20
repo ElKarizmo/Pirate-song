@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  /* Transparent background on dark pages: add ?theme=dark to the iframe link.
+     (Browsers paint an embedded page opaque white when its light/dark theme differs from the page around it.) */
+  (function () {
+    var m = /[?&]theme=(dark|light)/.exec(location.search);
+    if (m) document.documentElement.style.colorScheme = m[1];
+  })();
+</script>
 <title>Pirate song</title>
 <style>
   /* Everything scales from --h (the widget height). Proportions are measured from the design mockup. */
