@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blog image</title>
+<script>
+  /* Add ?theme=dark to the iframe link if your chess.com page is dark (keeps the background transparent). */
+  (function () {
+    var m = /[?&]theme=(dark|light)/.exec(location.search);
+    if (m) document.documentElement.style.colorScheme = m[1];
+  })();
+</script>
+<style>
+  :root {
+    --gold: 252, 226, 106;          /* same gold as the table border: rgb(252, 226, 106) */
+    --time: 1.2s;                   /* how long one spin lasts */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; }
+  body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+  .wrap { position: relative; perspective: 900px; padding: 14px; max-width: 100%; max-height: 100%; }
+
+  .card {
+    position: relative; display: block; overflow: hidden;
+    border-radius: 12px; cursor: default; outline: none;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .35);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card[href] { cursor: pointer; }
+  .card img {
+    display: block; width: auto; height: auto;
+    max-width: calc(100vw - 28px); max-height: calc(100vh - 28px);
+  }
+
+  /* The shine: a bright diagonal band that sweeps across as the image comes back around */
+  .card::after {
+    content: ""; position: absolute; inset: -25%; pointer-events: none;
+    background: linear-gradient(105deg,
+      transparent 38%, rgba(255, 255, 255, .2) 44%,
+      rgba(255, 248, 200, .95) 50%,
+      rgba(255, 255, 255, .2) 56%, transparent 62%);
+    transform: translateX(-80%);
+  }
+
+  /* The spin: one full turn, a little lift, and a gold glow that fades out */
+  .card.spin { animation: spin var(--time) cubic-bezier(.45, .05, .2, 1) both; }
+  .card.spin::after { animation: shine var(--time) ease-in-out both; }
+  @keyframes spin {
+    0%   { transform: rotateY(0deg)   scale(1);    box-shadow: 0 6px 16px rgba(0,0,0,.35), 0 0 0 0 rgba(var(--gold), 0); }
+    50%  { transform: rotateY(180deg) scale(1.08); box-shadow: 0 10px 22px rgba(0,0,0,.4),  0 0 18px 2px rgba(var(--gold), .55); }
+    100% { transform: rotateY(360deg) scale(1);    box-shadow: 0 6px 16px rgba(0,0,0,.35), 0 0 0 0 rgba(var(--gold), 0); }
+  }
+  @keyframes shine {
+    0%, 50% { transform: translateX(-80%); }
+    100%    { transform: translateX(80%); }
+  }
+
+  /* Two little sparkles that twinkle right after the shine passes */
+  .spark {
+    position: absolute; width: 22px; height: 22px; pointer-events: none; opacity: 0;
+    background: rgb(255, 250, 215);
+    clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+    filter: drop-shadow(0 0 4px rgb(var(--gold)));
+  }
+  .spark.a { top: 4px; right: 6px; }
+  .spark.b { bottom: 8px; left: 4px; width: 16px; height: 16px; }
+  .spin ~ .spark { animation: twinkle var(--time) ease-out both; }
+  .spin ~ .spark.b { animation-delay: .08s; }
+  @keyframes twinkle {
+    0%, 70% { opacity: 0; transform: scale(0) rotate(0deg); }
+    85%     { opacity: 1; transform: scale(1.15) rotate(45deg); }
+    100%    { opacity: 0; transform: scale(0) rotate(90deg); }
+  }
+
+  .missing { font: 14px/1.4 system-ui, sans-serif; color: #888; text-align: center; padding: 12px; }
+
+  /* Reduced motion: no turning, just the shine */
+  @media (prefers-reduced-motion: reduce) {
+    .card.spin { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!--
+  HOW TO USE
+  Upload this file and blog.jpg to the same GitHub folder. The image and blog link are set in the "Your settings"
+  block near the bottom of this file. Optional overrides in the iframe link:
+  ?theme=dark  keeps the background transparent on dark pages
+  ?img=other.jpg  uses a different image      ?link=https://...  opens a different page when clicked
+-->
+
+<div class="wrap" id="wrap">
+  <a class="card" id="card"><img id="pic" alt="My blog"></a>
+  <i class="spark a"></i><i class="spark b"></i>
+</div>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var wrap = document.getElementById('wrap');
+  var card = document.getElementById('card');
+  var pic = document.getElementById('pic');
+
+  // ---- Your settings (you can still override them with ?img= and ?link= in the iframe link) ----
+  var DEFAULT_IMAGE = 'blog.jpg';
+  var DEFAULT_LINK  = 'https://www.chess.com/blog/MagnetCalsson/piratlous-deal-a-chesstic-boss-fight-with-only-three-hearts';
+  // ---------------------------------------------------------------------------------------------
+
+  pic.src = q.get('img') || DEFAULT_IMAGE;
+  pic.onerror = function () {
+    wrap.innerHTML = '<p class="missing">Image not found.<br>Upload your image next to this file and name it ' + DEFAULT_IMAGE + '</p>';
+  };
+
+  var link = q.get('link') || DEFAULT_LINK;
+  if (link && /^https?:\/\//i.test(link)) {
+    card.href = link; card.target = '_blank'; card.rel = 'noopener';
+  }
+
+  // Play the spin once per hover; it can't restart until it has finished.
+  function play() {
+    if (card.classList.contains('spin')) return;
+    card.classList.add('spin');
+  }
+  card.addEventListener('pointerenter', play);
+  card.addEventListener('focus', play);
+  card.addEventListener('animationend', function (e) {
+    if (e.target === card && e.animationName === 'spin') card.classList.remove('spin');
+  });
+  // Phones have no hover, so a tap also plays it
+  card.addEventListener('touchstart', play, { passive: true });
+
+  // With reduced motion there is no turning, so the end of the shine ends the state instead
+  card.addEventListener('animationend', function (e) {
+    if (e.target === card && e.animationName === 'shine') card.classList.remove('spin');
+  });
+})();
+</script>
+</body>
+</html>
